@@ -43,7 +43,7 @@ jobs:
         draft: false
         prerelease: false
   
-    -name: Get url to upload to release from output
+    - name: Get url to upload to release from output
       env:
         url: ${{ steps.create_release.outputs.upload_url }}
       run: |
