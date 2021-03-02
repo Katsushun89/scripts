@@ -26,4 +26,90 @@ jobs:
     
     - name: Test code
       run: go test -v .
+
+  setup-release:
+    name: Setup release
+    needs: test # This workflow is executed after completed 'test' job
+    runs-on: ubuntu-latest
+    steps:
+    - name: Create release
+      id: create_release
+      uses: actions/create-release@v1.0.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
   
+    -name: Get url to upload to release from output
+      env:
+        url: ${{ steps.create_release.outputs.upload_url }}
+      run: |
+        mkdir artifact
+        echo $url > artifact/url.txt
+    - name: Upload artifact to share url with other jobs
+      uses: actions/upload-artifact@v1
+      with:
+        name: artifact
+        path: artifact/url.txt
+  
+  release-binary:
+    name: Release Binary
+    needs: setup-release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+      archtec: [amd64, arm64]
+      include:
+      - archtec: amd64
+        goos: linux
+        arch: amd64
+      - archtec: arm64
+        goos: linux
+        arch: arm64
+
+    steps:
+    - name: Set up Go 1.15
+      uses: actions/setup-go@v1
+      with: 
+        go-version: 1.15
+    
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Get dependencies
+      run: go get -v -t -d ./...
+    
+    - name: Build
+      env:
+        goos: ${{ matrix.goos }}
+        goarch: ${{ matrix.arch }}
+      run: |
+        mkdir bin
+        GCO_ENABLE=0 GOOS=$goos GOARCH=$goarch go build -o bin/${{ github.event.repository.name }}.$goarch
+
+    - name: Download artifact to get url to upload to release
+      uses: actions/download-artifact@v1
+      with:
+        name: artifact
+    
+    - name: Get url to upload to release from artifact
+      id: get_url
+      run: |
+        url=$(cat artifact/url.txt)
+        echo "##[set-output name=upload_url;]$url"
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v1
+    
+    - name: Upload release asset
+      uses: actions/upload-release-asset@v1.0.1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.get_url.outputs.upload_url }}
+        asset_path: ./bin/${{ github.event.repository.name }}.$goarch
+        asset_name: ${{ github.event.repository.name }}.$goarch
+        asset_content_type: application/octet-stream
