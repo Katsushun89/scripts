@@ -1,6 +1,9 @@
 name: Go
 
 on:
+  workflow_dispatch:
+    tags:
+    - '*.*.*'    
   push:
     tags:
     - '*.*.*'
