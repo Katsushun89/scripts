@@ -61,14 +61,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-      archtec: [amd64, arm64]
-      include:
-      - archtec: amd64
-        goos: linux
-        arch: amd64
-      - archtec: arm64
-        goos: linux
-        arch: arm64
+        archtec: [amd64, arm64]
+        include:
+        - archtec: amd64
+          goos: linux
+          arch: amd64
+        - archtec: arm64
+          goos: linux
+          arch: arm64
 
     steps:
     - name: Set up Go 1.15
