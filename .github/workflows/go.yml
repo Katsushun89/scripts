@@ -89,6 +89,7 @@ jobs:
       run: |
         mkdir bin
         GCO_ENABLE=0 GOOS=$goos GOARCH=$goarch go build -o bin/${{ github.event.repository.name }}.$goarch
+        ls ./bin/
 
     - name: Download artifact to get url to upload to release
       uses: actions/download-artifact@v1
@@ -108,6 +109,9 @@ jobs:
       uses: actions/upload-release-asset@v1.0.1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        goos: ${{ matrix.goos }}
+        goarch: ${{ matrix.arch }}
+
       with:
         upload_url: ${{ steps.get_url.outputs.upload_url }}
         asset_path: ./bin/${{ github.event.repository.name }}.$goarch
