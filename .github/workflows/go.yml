@@ -85,7 +85,7 @@ jobs:
         goarch: ${{ matrix.arch }}
       run: |
         mkdir bin
-        GCO_ENABLE=0 GOOS=$goos GOARCH=$goarch go build -o bin/${{ github.event.repository.name }}.$goarch
+        GCO_ENABLE=0 GOOS=$goos GOARCH=$goarch go build -o bin/${{ github.event.repository.name }}.$goarch .
         ls ./bin/
 
     - name: Download artifact to get url to upload to release
