@@ -114,6 +114,10 @@ jobs:
 
       with:
         upload_url: ${{ steps.get_url.outputs.upload_url }}
-        asset_path: ./bin/${{ github.event.repository.name }}.$goarch
-        asset_name: ${{ github.event.repository.name }}.$goarch
+        asset_path: ./bin/${{ github.event.repository.name }}.${{ matrix.arch }}
+        asset_name: ${{ github.event.repository.name }}.${{ matrix.arch }}
         asset_content_type: application/octet-stream
+      
+      run: |
+        echo ${{ github.event.repository.name }}.${{ matrix.arch }}
+        echo $goarch
