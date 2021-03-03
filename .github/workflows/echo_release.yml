@@ -2,7 +2,7 @@ name: Echo Release
 
 on:
   release:
-    types: [published]
+    types: [released]
 
 jobs:
   echo:
