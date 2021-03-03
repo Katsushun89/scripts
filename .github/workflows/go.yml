@@ -20,6 +20,7 @@ jobs:
 
     - name: Check tag
       run: |
+        echo "refs/tags/" + ${{ github.event.inputs.tags }} >> $GITHUB_REF
         echo ${{ github.event.inputs.tags }}
         echo ${{ github.ref }}
     
