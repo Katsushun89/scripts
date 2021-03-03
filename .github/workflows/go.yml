@@ -109,6 +109,8 @@ jobs:
       run: |
         echo ${{ github.event.repository.name }}.${{ matrix.arch }}
         echo $goarch
+        ls ./
+        ls ./bin
     
     - name: Upload release asset
       uses: actions/upload-release-asset@v1.0.1
