@@ -5,9 +5,7 @@ on:
     tags:
     - "[0-9].[0-9]+.[0-9]+"
   workflow_dispatch:
-    inputs:
-      tags:
-        description: 'tag name'
+
 jobs:
   test:
     name: Test
@@ -18,10 +16,8 @@ jobs:
       with: 
         go-version: 1.15
 
-    - name: Check tag
+    - name: Check github.ref
       run: |
-        echo "refs/tags/" + ${{ github.event.inputs.tags }} >> $GITHUB_REF
-        echo ${{ github.event.inputs.tags }}
         echo ${{ github.ref }}
     
     - name: Check out code into the Go module directory
