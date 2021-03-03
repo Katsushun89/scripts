@@ -1,0 +1,28 @@
+name: Echo Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  echo:
+    name: Echo release
+    runs-on: ubuntu-latest
+    steps:
+    - name: echo tag
+      run: |
+        echo ${{ github.ref }}
+        echo $GITHUB_REF
+
+    - name: download assets
+      uses: wyozi/download-gh-release-asset@master
+      with:
+        args: parrallel_exec_script.amd64
+      env:
+        GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+    - name: Check download file
+      run: |
+        ls
+        
+      
