@@ -1,12 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"os/exec"
+	"time"
 )
+
 const (
 	script_path1 string = "./time.sh"
 	script_path2 string = "./test.sh"
 )
+
 func execCommand(cmd_path string) {
 	cmd := exec.Command("sh", "-c", cmd_path)
 	cmd.Run()
@@ -40,20 +46,27 @@ func killProcess() {
 }
 */
 
+func isExistsScript(file_name string) bool {
+	_, err := os.Stat(file_name)
+	if err == nil {
+		fmt.Println()
+		return true
+	}
+	return false
+}
+
 func exec2Scripts(script1 string, script2 string) error {
-
-	err := isExistsScript(script1)
-	if err != nil {
-		fmt.Println("not exists script:", script1)
+	var err error
+	if isExistsScript(script1) {
+		err = fmt.Errorf("not exists script:", script1)
 		return err
 	}
-	err = isExistsScript(script2)
-	if err != nil {
-		fmt.Println("not exists script:", script2)
+	if isExistsScript(script2) {
+		err = fmt.Errorf("not exists script:", script2)
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Scond*15)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
 	defer cancel()
 	go execScriptBackground(script1, ctx)
 
@@ -68,18 +81,17 @@ func exec2Scripts(script1 string, script2 string) error {
 }
 
 func main() {
-	if len(args) < 2 {
+	if len(os.Args) < 2 {
 		fmt.Println("You must set 2 script file")
-		return -1
+		return
 	}
-
+	args := os.Args
 	var script1 = args[0]
 	var script2 = args[1]
 
 	err := exec2Scripts(script1, script2)
 	if err != nil {
-		return -1
+		return
 	}
-	return 0
-
+	return
 }
