@@ -1,5 +1,5 @@
 
-NAME := parallel_exec_script
+NAME := exec_2_scripts
 
 test:
 	go test
