@@ -6,20 +6,31 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 )
 
-func execScript(script string, ctx context.Context, ch chan int) {
+func execScript(script string, ctx context.Context, ch chan int, wg *sync.WaitGroup) {
 	cmd := exec.Command("sh", "-c", script)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Start()
 	ch <- cmd.Process.Pid
 
 	cmd.Wait()
+	fmt.Println("end exec ", script)
+	compDone := false
+	wg.Done()
+	fmt.Println("wg.Done()")
+	compDone = true
 	for {
 		select {
 		case <-ctx.Done():
+			fmt.Println("execScript Done")
+			if !compDone {
+				wg.Done()
+				fmt.Println("wg.Done()")
+			}
 			return
 		}
 	}
@@ -33,18 +44,35 @@ func isExistsScript(file_name string) bool {
 	return false
 }
 
-func execScripts(scripts [2]string) error {
-	ch := make(chan int)
+func waitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
+	c := make(chan struct{})
+	go func() {
+		defer close(c)
+		wg.Wait()
+	}()
+	select {
+	case <-c:
+		return false // completed normally
+	case <-time.After(timeout):
+		return true // timed out
+	}
+}
 
+func execScripts(scripts []string) error {
+	ch := make(chan int)
+	c := make(chan struct{})
+	var wg sync.WaitGroup
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	for _, script := range scripts {
 		if !isExistsScript(script) {
 			err := fmt.Errorf("not exists script:%s", script)
 			return err
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
-		defer cancel()
-		go execScript(script, ctx, ch)
+		wg.Add(1)
+		go execScript(script, ctx, ch, &wg)
 	}
 
 	var pgids []int
@@ -56,18 +84,25 @@ func execScripts(scripts [2]string) error {
 		}
 	}
 
-	fmt.Printf("wait %d sec ", 5)
-	t := time.NewTimer(5 * time.Second)
-	fmt.Println("-> end of waiting")
+	go func() {
+		wg.Wait()
+		c <- struct{}{}
+	}()
+
+	timeout := time.Duration(5) * time.Second
+	fmt.Printf("Wait for waitgroup (up to %s)\n", timeout)
 
 	s := make(chan os.Signal)
 	signal.Notify(s, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
 	select {
 	case sig := <-s:
 		fmt.Println("signal:", sig)
-	case <-t.C:
-		fmt.Println("timeout")
+	case <-c:
+		fmt.Printf("Wait group finished\n")
+	case <-time.After(timeout):
+		fmt.Printf("Timed out waiting for wait group\n")
 	}
+	cancel()
 
 	for _, pgid := range pgids {
 		fmt.Println("kill process pgid:", pgid)
@@ -77,41 +112,33 @@ func execScripts(scripts [2]string) error {
 	return nil
 }
 
-func getScritps(args []string) ([2]string, error) {
+func getScritps(args []string) ([]string, error) {
 	if len(args) < 3 {
-		err := fmt.Errorf("You must set 1 script file")
-		return [2]string{"", ""}, err
+		err := fmt.Errorf("Set one or more scripts")
+		return []string{""}, err
 	}
-	scripts := [2]string{args[1], args[2]}
+	scripts := []string{}
+	for i, arg := range args {
+		if i != 0 {
+			scripts = append(scripts, arg)
+		}
+	}
+	fmt.Println(scripts)
 	return scripts, nil
-}
-
-func showPS() {
-	b, err := exec.Command("ps", "j").Output()
-	fmt.Println(string(b), err)
 }
 
 func main() {
 	scripts, err := getScritps(os.Args)
-
-	fmt.Println("scripts[0]:", scripts[0])
-	fmt.Println("scripts[1]:", scripts[1])
-	fmt.Println(err)
-	//return
+	if err != nil {
+		fmt.Printf("arg err :%s", err)
+		return
+	}
 
 	err = execScripts(scripts)
 	if err != nil {
 		fmt.Printf("exec2scripts error:%s\n", err)
 		return
 	}
-	/*
-		s := make(chan os.Signal)
-		signal.Notify(s, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
-		select {
-		case sig := <-s:
-			fmt.Println("signal:", sig)
-		}
-	*/
 	return
 
 }
