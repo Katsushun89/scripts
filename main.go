@@ -5,29 +5,18 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
-const (
-	script_path1 string = "./time.sh"
-	script_path2 string = "./test.sh"
-)
+func execScript(script string, ctx context.Context, ch chan int) {
+	cmd := exec.Command("sh", "-c", script)
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	cmd.Start()
+	ch <- cmd.Process.Pid
 
-func execCommand(cmd_path string) {
-	cmd := exec.Command("sh", "-c", cmd_path)
-	cmd.Run()
 	cmd.Wait()
-}
-
-func execScriptBackground(script1 string, ctx context.Context) {
-	//var home string = os.Getenv("HOME")
-	cmdPath := /*home +*/ script1
-
-	execCommand(cmdPath)
-	//cmd := exec.Command("sh", "-c", cmdPath)
-	//cmd.Run()
-	//cmd.Wait()
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -36,62 +25,93 @@ func execScriptBackground(script1 string, ctx context.Context) {
 	}
 }
 
-/*
-func killProcess() {
-	cmdstr := "ps aux | grep \"time.sh\" | grep -v grep | awk '{ print \"kill -9\", $2 }' | sh"
-
-	cmd := exec.Command("sh", "-c", cmdstr)
-	cmd.Run()
-	cmd.Wait()
-}
-*/
-
 func isExistsScript(file_name string) bool {
 	_, err := os.Stat(file_name)
 	if err == nil {
-		fmt.Println()
 		return true
 	}
 	return false
 }
 
-func exec2Scripts(script1 string, script2 string) error {
-	var err error
-	if isExistsScript(script1) {
-		err = fmt.Errorf("not exists script:", script1)
-		return err
+func execScripts(scripts [2]string) error {
+	ch := make(chan int)
+
+	for _, script := range scripts {
+		if !isExistsScript(script) {
+			err := fmt.Errorf("not exists script:%s", script)
+			return err
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+		defer cancel()
+		go execScript(script, ctx, ch)
 	}
-	if isExistsScript(script2) {
-		err = fmt.Errorf("not exists script:", script2)
-		return err
+
+	var pgids []int
+
+	for _, _ = range scripts {
+		select {
+		case v := <-ch:
+			pgids = append(pgids, v)
+		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
-	defer cancel()
-	go execScriptBackground(script1, ctx)
+	fmt.Printf("wait %d sec ", 5)
+	t := time.NewTimer(5 * time.Second)
+	fmt.Println("-> end of waiting")
 
-	//fmt.Print("wait 15sec ")
-	//time.Sleep(time.Second * 15)
-	//fmt.Println("-> end of waiting")
+	s := make(chan os.Signal)
+	signal.Notify(s, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
+	select {
+	case sig := <-s:
+		fmt.Println("signal:", sig)
+	case <-t.C:
+		fmt.Println("timeout")
+	}
 
-	execCommand(script2)
+	for _, pgid := range pgids {
+		fmt.Println("kill process pgid:", pgid)
+		syscall.Kill(-pgid, syscall.SIGKILL)
+	}
 
-	cancel()
-	return err
+	return nil
+}
+
+func getScritps(args []string) ([2]string, error) {
+	if len(args) < 3 {
+		err := fmt.Errorf("You must set 1 script file")
+		return [2]string{"", ""}, err
+	}
+	scripts := [2]string{args[1], args[2]}
+	return scripts, nil
+}
+
+func showPS() {
+	b, err := exec.Command("ps", "j").Output()
+	fmt.Println(string(b), err)
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("You must set 2 script file")
-		return
-	}
-	args := os.Args
-	var script1 = args[0]
-	var script2 = args[1]
+	scripts, err := getScritps(os.Args)
 
-	err := exec2Scripts(script1, script2)
+	fmt.Println("scripts[0]:", scripts[0])
+	fmt.Println("scripts[1]:", scripts[1])
+	fmt.Println(err)
+	//return
+
+	err = execScripts(scripts)
 	if err != nil {
+		fmt.Printf("exec2scripts error:%s\n", err)
 		return
 	}
+	/*
+		s := make(chan os.Signal)
+		signal.Notify(s, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
+		select {
+		case sig := <-s:
+			fmt.Println("signal:", sig)
+		}
+	*/
 	return
+
 }

@@ -1,5 +1,5 @@
 
-NAME := exec_2_scripts
+NAME := scripts
 
 test:
 	go test
