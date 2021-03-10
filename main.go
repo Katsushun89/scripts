@@ -94,6 +94,8 @@ func execScripts(scripts []string) error {
 
 	s := make(chan os.Signal)
 	signal.Notify(s, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(s)
+
 	select {
 	case sig := <-s:
 		fmt.Println("signal:", sig)
@@ -103,6 +105,7 @@ func execScripts(scripts []string) error {
 		fmt.Printf("Timed out waiting for wait group\n")
 	}
 	cancel()
+	time.Sleep(2 * time.Second) //wait cancel
 
 	for _, pgid := range pgids {
 		fmt.Println("kill process pgid:", pgid)
