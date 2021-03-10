@@ -18,11 +18,11 @@ func TestIsExistsScript(t *testing.T) {
 }
 
 func TestExec2Scripts(t *testing.T) {
-	scripts := [2]string{
+	scripts := []string{
 		"test/echo_time.sh",
 		"test/echo_cnt.sh"}
 
-	err := exec2Scripts(scripts)
+	err := execScripts(scripts)
 	if err != nil {
 		t.Errorf("Not succeeded to exec2scripts:%s\n", err)
 	}
