@@ -30,7 +30,7 @@ func TestExec2Scripts(t *testing.T) {
 	}
 }
 
-func TestA(t *testing.T) {
+func TestLeak(t *testing.T) {
 	defer goleak.VerifyNone(t)
 
 	// test logic here.

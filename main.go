@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"runtime"
 	"sync"
 	"syscall"
 	"time"
@@ -19,18 +18,14 @@ func execScript(script string, ctx context.Context, ch chan int, wg *sync.WaitGr
 	ch <- cmd.Process.Pid
 
 	cmd.Wait()
-	fmt.Println("end exec ", script)
 	compDone := false
 	wg.Done()
-	fmt.Println("wg.Done()")
 	compDone = true
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("execScript Done")
 			if !compDone {
 				wg.Done()
-				fmt.Println("wg.Done()")
 			}
 			return
 		}
@@ -46,7 +41,7 @@ func isExistsScript(file_name string) bool {
 }
 
 func waitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
-	c := make(chan struct{})
+	c := make(chan int)
 	go func() {
 		defer close(c)
 		wg.Wait()
@@ -61,7 +56,7 @@ func waitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
 
 func execScripts(scripts []string) error {
 	ch := make(chan int)
-	c := make(chan struct{})
+	c := make(chan int)
 	var wg sync.WaitGroup
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -87,18 +82,19 @@ func execScripts(scripts []string) error {
 
 	go func(ctx context.Context) {
 		wg.Wait()
-		//c <- struct{}{}
+		select {
+		case c <- 1:
+		default:
+		}
 		for {
 			select {
 			case <-ctx.Done():
-				fmt.Println("go func Done")
 				return
 			}
 		}
 	}(ctx)
 
 	timeout := time.Duration(5) * time.Second
-	fmt.Printf("Wait for waitgroup (up to %s)\n", timeout)
 
 	s := make(chan os.Signal)
 	signal.Notify(s, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
@@ -108,25 +104,24 @@ func execScripts(scripts []string) error {
 	case sig := <-s:
 		fmt.Println("signal:", sig)
 	case <-c:
-		fmt.Printf("Wait group finished\n")
+		fmt.Printf("all scripts finished\n")
 	case <-time.After(timeout):
-		fmt.Printf("Timed out waiting for wait group\n")
+		fmt.Printf("timed out\n")
 	}
 
 	for _, pgid := range pgids {
-		fmt.Println("kill process pgid:", pgid)
+		//fmt.Println("kill process pgid:", pgid)
 		syscall.Kill(-pgid, syscall.SIGKILL)
 	}
 
-	fmt.Println("before cancel")
 	cancel()
-	time.Sleep(2 * time.Second) //wait cancel
-	fmt.Println("after cancel and sleep")
+	time.Sleep(1 * time.Second) //wait cancel
+	//fmt.Println("after cancel and sleep")
 	return nil
 }
 
 func getScritps(args []string) ([]string, error) {
-	if len(args) < 3 {
+	if len(args) < 2 {
 		err := fmt.Errorf("Set one or more scripts")
 		return []string{""}, err
 	}
@@ -146,9 +141,7 @@ func main() {
 		fmt.Printf("arg err :%s", err)
 		return
 	}
-	fmt.Println("A num goroutine: ", runtime.NumGoroutine())
 	err = execScripts(scripts)
-	fmt.Println("B num goroutine: ", runtime.NumGoroutine())
 	if err != nil {
 		fmt.Printf("exec2scripts error:%s\n", err)
 		return
