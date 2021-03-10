@@ -2,7 +2,7 @@
 NAME := scripts
 
 test:
-	go test
+	go test -v ./...
 
 build:
 	for arch in amd64 arm64; do \

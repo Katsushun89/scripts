@@ -40,20 +40,6 @@ func isExistsScript(file_name string) bool {
 	return false
 }
 
-func waitTimeout(wg *sync.WaitGroup, timeout time.Duration) bool {
-	c := make(chan int)
-	go func() {
-		defer close(c)
-		wg.Wait()
-	}()
-	select {
-	case <-c:
-		return false // completed normally
-	case <-time.After(timeout):
-		return true // timed out
-	}
-}
-
 func execScripts(scripts []string) error {
 	ch := make(chan int)
 	c := make(chan int)
