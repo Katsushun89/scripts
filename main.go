@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"runtime"
 	"sync"
 	"syscall"
 	"time"
@@ -84,10 +85,17 @@ func execScripts(scripts []string) error {
 		}
 	}
 
-	go func() {
+	go func(ctx context.Context) {
 		wg.Wait()
-		c <- struct{}{}
-	}()
+		//c <- struct{}{}
+		for {
+			select {
+			case <-ctx.Done():
+				fmt.Println("go func Done")
+				return
+			}
+		}
+	}(ctx)
 
 	timeout := time.Duration(5) * time.Second
 	fmt.Printf("Wait for waitgroup (up to %s)\n", timeout)
@@ -104,14 +112,16 @@ func execScripts(scripts []string) error {
 	case <-time.After(timeout):
 		fmt.Printf("Timed out waiting for wait group\n")
 	}
-	cancel()
-	time.Sleep(2 * time.Second) //wait cancel
 
 	for _, pgid := range pgids {
 		fmt.Println("kill process pgid:", pgid)
 		syscall.Kill(-pgid, syscall.SIGKILL)
 	}
 
+	fmt.Println("before cancel")
+	cancel()
+	time.Sleep(2 * time.Second) //wait cancel
+	fmt.Println("after cancel and sleep")
 	return nil
 }
 
@@ -136,8 +146,9 @@ func main() {
 		fmt.Printf("arg err :%s", err)
 		return
 	}
-
+	fmt.Println("A num goroutine: ", runtime.NumGoroutine())
 	err = execScripts(scripts)
+	fmt.Println("B num goroutine: ", runtime.NumGoroutine())
 	if err != nil {
 		fmt.Printf("exec2scripts error:%s\n", err)
 		return

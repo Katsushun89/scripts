@@ -2,6 +2,8 @@ package main
 
 import (
 	"testing"
+
+	"go.uber.org/goleak"
 )
 
 func TestIsExistsScript(t *testing.T) {
@@ -26,4 +28,10 @@ func TestExec2Scripts(t *testing.T) {
 	if err != nil {
 		t.Errorf("Not succeeded to exec2scripts:%s\n", err)
 	}
+}
+
+func TestA(t *testing.T) {
+	defer goleak.VerifyNone(t)
+
+	// test logic here.
 }
