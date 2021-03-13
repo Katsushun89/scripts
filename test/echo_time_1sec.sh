@@ -1,4 +1,4 @@
 #!/bin/sh
 
 sleep 1
-date
+date >> echo_time.log
