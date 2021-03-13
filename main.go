@@ -43,7 +43,7 @@ func isExistsScript(file_name string) bool {
 	return false
 }
 
-func execScripts(scripts []string) error {
+func execScripts(scripts []string, duration int) error {
 	ch := make(chan int)
 	c := make(chan int)
 	var wg sync.WaitGroup
@@ -83,7 +83,7 @@ func execScripts(scripts []string) error {
 		}
 	}(ctx)
 
-	timeout := time.Duration(5) * time.Second
+	timeout := time.Duration(duration) * time.Second
 
 	s := make(chan os.Signal)
 	signal.Notify(s, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM)
@@ -93,9 +93,9 @@ func execScripts(scripts []string) error {
 	case sig := <-s:
 		fmt.Println("signal:", sig)
 	case <-c:
-		fmt.Printf("all scripts finished\n")
+		fmt.Println("all scripts finished")
 	case <-time.After(timeout):
-		fmt.Printf("timed out\n")
+		fmt.Println("timed out")
 	}
 
 	for _, pgid := range pgids {
@@ -118,17 +118,21 @@ func getScritps(args []string) ([]string, error) {
 
 		scripts = append(scripts, arg)
 	}
-	fmt.Println("run scripts: ", scripts)
+	fmt.Println("run scripts:", scripts)
 	return scripts, nil
 }
 
-func scripts(args []string) error {
+func scripts(args []string, timeout int) error {
+	if timeout < 0 {
+		return fmt.Errorf("invalid timeout duration:%d", timeout)
+	}
+
 	scripts, err := getScritps(args)
 	if err != nil {
 		err = fmt.Errorf("arg err :%s", err)
 		return err
 	}
-	err = execScripts(scripts)
+	err = execScripts(scripts, timeout)
 	if err != nil {
 		err = fmt.Errorf("exec scripts error:%s\n", err)
 		return err
@@ -142,8 +146,8 @@ func main() {
 			&cli.StringFlag{
 				Name:    "timeout",
 				Aliases: []string{"t"},
-				Value:   "0",
-				Usage:   "script timeout duration",
+				Value:   "-1",
+				Usage:   "timeout duration [sec]",
 			},
 		},
 
@@ -151,7 +155,7 @@ func main() {
 			if c.Args().Len() < 1 {
 				return fmt.Errorf("not set script file")
 			}
-			err := scripts(c.Args().Slice())
+			err := scripts(c.Args().Slice(), c.Int("timeout"))
 			return err
 		},
 	}

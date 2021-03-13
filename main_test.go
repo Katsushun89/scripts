@@ -19,43 +19,53 @@ func TestIsExistsScript(t *testing.T) {
 	}
 }
 
-func TestExec1ScriptTimeout(t *testing.T) {
-	scripts := []string{
+func TestInvalidTimeout(t *testing.T) {
+	args := []string{
 		"test/echo_time.sh"}
 
-	err := execScripts(scripts)
+	err := scripts(args, -1)
+	if err == nil {
+		t.Errorf("not rejected invalid timeout :%s\n", err)
+	}
+}
+
+func Test1ScriptTimeout(t *testing.T) {
+	args := []string{
+		"test/echo_time.sh"}
+
+	err := scripts(args, 1)
 	if err != nil {
 		t.Errorf("Not succeeded to exec2scripts:%s\n", err)
 	}
 }
 
-func TestExec1ScriptFinish(t *testing.T) {
-	scripts := []string{
+func Test1ScriptFinish(t *testing.T) {
+	args := []string{
 		"test/echo_time_1sec.sh"}
 
-	err := execScripts(scripts)
+	err := scripts(args, 10)
 	if err != nil {
 		t.Errorf("Not succeeded to exec2scripts:%s\n", err)
 	}
 }
 
-func TestExec2ScriptsTimeout(t *testing.T) {
-	scripts := []string{
+func TestScriptsTimeout(t *testing.T) {
+	args := []string{
 		"test/echo_time.sh",
 		"test/echo_cnt.sh"}
 
-	err := execScripts(scripts)
+	err := scripts(args, 3)
 	if err != nil {
 		t.Errorf("Not succeeded to exec2scripts:%s\n", err)
 	}
 }
 
-func TestExec2ScriptsFinish(t *testing.T) {
-	scripts := []string{
+func TestScriptsFinish(t *testing.T) {
+	args := []string{
 		"test/echo_time_1sec.sh",
 		"test/echo_cnt_2sec.sh"}
 
-	err := execScripts(scripts)
+	err := scripts(args, 3)
 	if err != nil {
 		t.Errorf("Not succeeded to exec2scripts:%s\n", err)
 	}
