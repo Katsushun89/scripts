@@ -1,4 +1,4 @@
-name: Go
+name: Release
 
 on:
   push:
@@ -26,7 +26,7 @@ jobs:
       run: go get -v -t -d ./...
     
     - name: Test code
-      run: go test -v .
+      run: go test -v ./...
 
   setup-release:
     name: Setup release
