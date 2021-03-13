@@ -126,6 +126,7 @@ func scripts(args []string, timeout int) error {
 	if timeout < 0 {
 		return fmt.Errorf("invalid timeout duration:%d", timeout)
 	}
+	fmt.Println("timeout duration:", timeout, "[sec]")
 
 	scripts, err := parse(args)
 	if err != nil {
@@ -140,13 +141,36 @@ func scripts(args []string, timeout int) error {
 	return err
 }
 
+func custumHelp() string {
+	var HelpTemplate = `NAME:{{.Name}}{{if .Usage}} - {{.Usage}}{{end}}
+
+USAGE:
+   {{if .UsageText}}{{.UsageText}}{{else}}{{.HelpName}} {{if .VisibleFlags}}[options]{{end}} {{if .ArgsUsage}}{{.ArgsUsage}}{{else}}[arguments...]{{end}}{{end}}{{if .Version}}{{if not .HideVersion}}
+
+VERSION:
+   {{.Version}}{{end}}{{end}}{{if .Description}}
+
+DESCRIPTION:
+   {{.Description}}{{end}}{{if len .Authors}}
+
+AUTHOR{{with $length := len .Authors}}{{if ne 1 $length}}S{{end}}{{end}}:
+   {{range $index, $author := .Authors}}{{if $index}}
+   {{end}}{{$author}}{{end}}{{end}}{{if .VisibleCommands}}
+
+OPTIONS:
+   {{range $index, $option := .VisibleFlags}}{{if $index}}
+   {{end}}{{$option}}{{end}}{{end}}
+`
+	return HelpTemplate
+}
+
 func main() {
 	app := &cli.App{
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "timeout",
 				Aliases: []string{"t"},
-				Value:   "-1",
+				Value:   "60",
 				Usage:   "timeout duration [sec]",
 			},
 		},
@@ -159,7 +183,9 @@ func main() {
 			return err
 		},
 	}
-
+	app.Name = "scripts"
+	app.Usage = "cli tool to run multiple shell scripts in parallel"
+	app.CustomAppHelpTemplate = custumHelp()
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
