@@ -3,12 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"os/signal"
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/urfave/cli/v2"
 )
 
 func execScript(script string, ctx context.Context, ch chan int, wg *sync.WaitGroup) {
@@ -102,35 +105,60 @@ func execScripts(scripts []string) error {
 
 	cancel()
 	time.Sleep(1 * time.Second) //wait cancel
-	//fmt.Println("after cancel and sleep")
 	return nil
 }
 
 func getScritps(args []string) ([]string, error) {
-	if len(args) < 2 {
+	if len(args) < 1 {
 		err := fmt.Errorf("Set one or more scripts")
 		return []string{""}, err
 	}
 	scripts := []string{}
-	for i, arg := range args {
-		if i != 0 {
-			scripts = append(scripts, arg)
-		}
+	for _, arg := range args {
+
+		scripts = append(scripts, arg)
 	}
-	fmt.Println(scripts)
+	fmt.Println("run scripts: ", scripts)
 	return scripts, nil
 }
 
-func main() {
-	scripts, err := getScritps(os.Args)
+func scripts(args []string) error {
+	scripts, err := getScritps(args)
 	if err != nil {
-		fmt.Printf("arg err :%s", err)
-		return
+		err = fmt.Errorf("arg err :%s", err)
+		return err
 	}
 	err = execScripts(scripts)
 	if err != nil {
-		fmt.Printf("exec2scripts error:%s\n", err)
-		return
+		err = fmt.Errorf("exec scripts error:%s\n", err)
+		return err
+	}
+	return err
+}
+
+func main() {
+	app := &cli.App{
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:    "timeout",
+				Aliases: []string{"t"},
+				Value:   "0",
+				Usage:   "script timeout duration",
+			},
+		},
+
+		Action: func(c *cli.Context) error {
+			if c.Args().Len() < 1 {
+				return fmt.Errorf("not set script file")
+			}
+			err := scripts(c.Args().Slice())
+			return err
+		},
+	}
+
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
 	}
 	return
 
