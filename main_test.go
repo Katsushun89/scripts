@@ -6,13 +6,13 @@ import (
 	"go.uber.org/goleak"
 )
 
-func TestIsExistsScript(t *testing.T) {
-	isExists := isExistsScript("test/echo_time.sh")
+func TestisExistsFile(t *testing.T) {
+	isExists := isExistsFile("test/echo_time.sh")
 
 	if !isExists {
 		t.Error("not found scirpt")
 	}
-	isExists = isExistsScript("test/no_exist.sh")
+	isExists = isExistsFile("test/no_exist.sh")
 
 	if isExists {
 		t.Error("found scirpt wrong")

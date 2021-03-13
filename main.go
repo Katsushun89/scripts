@@ -14,7 +14,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-func execScript(script string, ctx context.Context, ch chan int, wg *sync.WaitGroup) {
+func run(script string, ctx context.Context, ch chan int, wg *sync.WaitGroup) {
 	cmd := exec.Command("sh", "-c", script)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Start()
@@ -35,7 +35,7 @@ func execScript(script string, ctx context.Context, ch chan int, wg *sync.WaitGr
 	}
 }
 
-func isExistsScript(file_name string) bool {
+func isExistsFile(file_name string) bool {
 	_, err := os.Stat(file_name)
 	if err == nil {
 		return true
@@ -51,13 +51,13 @@ func execScripts(scripts []string, duration int) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	for _, script := range scripts {
-		if !isExistsScript(script) {
+		if !isExistsFile(script) {
 			err := fmt.Errorf("not exists script:%s", script)
 			return err
 		}
 
 		wg.Add(1)
-		go execScript(script, ctx, ch, &wg)
+		go run(script, ctx, ch, &wg)
 	}
 
 	var pgids []int
@@ -108,7 +108,7 @@ func execScripts(scripts []string, duration int) error {
 	return nil
 }
 
-func getScritps(args []string) ([]string, error) {
+func parse(args []string) ([]string, error) {
 	if len(args) < 1 {
 		err := fmt.Errorf("Set one or more scripts")
 		return []string{""}, err
@@ -127,7 +127,7 @@ func scripts(args []string, timeout int) error {
 		return fmt.Errorf("invalid timeout duration:%d", timeout)
 	}
 
-	scripts, err := getScritps(args)
+	scripts, err := parse(args)
 	if err != nil {
 		err = fmt.Errorf("arg err :%s", err)
 		return err
