@@ -84,13 +84,10 @@ jobs:
       run: go get -v -t -d ./...
     
     - name: Build
-      env:
-        goos: ${{ matrix.goos }}
-        goarch: ${{ matrix.arch }}
       run: |
         mkdir dist
-        GCO_ENABLE=0 GOOS=$goos GOARCH=$goarch go build -o dist/${{ github.event.repository.name }} .
-        zip -j -r ${{ github.event.repository.name }}-${{ matrix.arch }} dist
+        GCO_ENABLE=0 GOOS=$goos GOARCH=${{ matrix.arch }} go build -o dist/${{ github.event.repository.name }} .
+        zip -j -r ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }} dist
         ls 
 
     - name: Download artifact to get url to upload to release
@@ -108,13 +105,11 @@ jobs:
       uses: actions/upload-release-asset@v1.0.1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        goos: ${{ matrix.goos }}
-        goarch: ${{ matrix.arch }}
 
       with:
         upload_url: ${{ steps.get_url.outputs.upload_url }}
-        asset_path: ./${{ github.event.repository.name }}-${{ matrix.arch }}.zip
-        asset_name: ${{ github.event.repository.name }}-${{ matrix.arch }}.zip
+        asset_path: ./${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}.zip
+        asset_name: ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }}.zip
         asset_content_type: application/octet-stream
       
 
