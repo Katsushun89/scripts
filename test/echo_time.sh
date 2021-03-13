@@ -3,5 +3,5 @@
 while true
 do
   sleep 1
-  date >> echo_time.log
+  date
 done
