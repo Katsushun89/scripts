@@ -86,7 +86,7 @@ jobs:
     - name: Build
       run: |
         mkdir dist
-        GCO_ENABLE=0 GOOS=$goos GOARCH=${{ matrix.arch }} go build -o dist/${{ github.event.repository.name }} .
+        GCO_ENABLED=0 GOOS=$goos GOARCH=${{ matrix.arch }} go build -o dist/${{ github.event.repository.name }} .
         zip -j -r ${{ github.event.repository.name }}_${{ matrix.goos }}_${{ matrix.arch }} dist
         ls 
 
