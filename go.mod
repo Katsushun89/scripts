@@ -1,4 +1,4 @@
-module exec_2_scripts
+module scripts
 
 go 1.15
 

@@ -35,7 +35,7 @@ func Test1ScriptTimeout(t *testing.T) {
 
 	err := scripts(args, 1)
 	if err != nil {
-		t.Errorf("Not succeeded to exec2scripts:%s\n", err)
+		t.Errorf("Not succeeded to execScripts:%s\n", err)
 	}
 }
 
@@ -45,7 +45,7 @@ func Test1ScriptFinish(t *testing.T) {
 
 	err := scripts(args, 10)
 	if err != nil {
-		t.Errorf("Not succeeded to exec2scripts:%s\n", err)
+		t.Errorf("Not succeeded to execScripts:%s\n", err)
 	}
 }
 
@@ -56,7 +56,7 @@ func TestScriptsTimeout(t *testing.T) {
 
 	err := scripts(args, 3)
 	if err != nil {
-		t.Errorf("Not succeeded to exec2scripts:%s\n", err)
+		t.Errorf("Not succeeded to execScripts:%s\n", err)
 	}
 }
 
@@ -67,7 +67,7 @@ func TestScriptsFinish(t *testing.T) {
 
 	err := scripts(args, 3)
 	if err != nil {
-		t.Errorf("Not succeeded to exec2scripts:%s\n", err)
+		t.Errorf("Not succeeded to execScripts:%s\n", err)
 	}
 }
 
